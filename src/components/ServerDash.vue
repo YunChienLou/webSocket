@@ -173,9 +173,9 @@
         >
           <th scope="row">{{ cell.cellId }}</th>
           <td>{{ cell.maxTraffic }}</td>
-          <td>{{ cell.currTraffic.value }}</td>
+          <td>{{ cell.currTraffic.value.toFixed(1) }}</td>
           <td :class="scoreColor(cell.currTraffic.value / cell.maxTraffic)">
-            {{ ((cell.currTraffic.value / cell.maxTraffic) * 100).toFixed() }} %
+            {{ ((cell.currTraffic.value / cell.maxTraffic) * 100).toFixed(1) }} %
           </td>
           <td>{{ cell.clients.length }}</td>
         </tr>
@@ -193,7 +193,7 @@
       </thead>
       <tbody>
         <tr
-          v-for="device in devices"
+          v-for="(device) in devices"
           :key="device.deviceId"
           @click="
             () => {
