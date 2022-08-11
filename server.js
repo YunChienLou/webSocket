@@ -2,6 +2,7 @@
 const express = require("express");
 const bodyParser = require("body-parser"); //解析body資訊
 const cors = require("cors"); // calling the API from different locations
+const e = require("express");
 const SocketServer = require("ws").Server;
 
 const PORT = 3000; //指定 port
@@ -10,16 +11,7 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-const cellArr = [
-  { cellId: 11851, maxTraffic: 256, clients: [], currTraffic: { value: 0 } },
-  // {
-  //   cellId: 11875,
-  //   maxTraffic: 768,
-  //   clients: [],
-  //   currTraffic: { value: 0 },
-  //   proxy: { value: 0 }
-  // }
-];
+const cellArr = [];
 const deviceArr = [];
 var clientPhones = new Map();
 var isFlowCtrl = false;
@@ -33,9 +25,10 @@ const trafficHandler = {
   set(target, property, value, receiver) {
     if (value < maxLimit) {
       console.log("Ok for streaming");
-      if (receiver.value < minLimit) {
+      if (value < minLimit) {
         //小於0.8 且這個 cell 中的client 有人的isStreaming == 1
-        console.log("if you turn yourself off , you should be on.....");
+        console.log(value, minLimit, "should Revive");
+        flowCtrlRevive();
       }
     } else {
       console.log(value, maxLimit, "should block");
@@ -44,11 +37,6 @@ const trafficHandler = {
   },
 };
 
-cellArr.forEach((el) => {
-  let proxy = new Proxy(el.currTraffic, trafficHandler);
-  el.proxy = proxy;
-});
-console.log(cellArr);
 //apis
 //get cells data
 app.get("/api/cells", (req, res) => {
@@ -89,6 +77,8 @@ app.post("/api/devices/:deviceId", (req, res) => {
 });
 
 app.post("/api/device/disconnect/:deviceId", (req, res) => {
+  console.log("client自發 處理 關閉");
+
   let deviceId = req.params.deviceId;
   let targetCell = req.body.cellId;
   console.log("要找的Cell", targetCell);
@@ -96,19 +86,21 @@ app.post("/api/device/disconnect/:deviceId", (req, res) => {
     if (cell.cellId == targetCell) {
       console.log("進入刪除流程");
       let targetIdx = cell.clients.findIndex((el) => {
-        el.deviceId == deviceId;
+        return el.deviceId == deviceId;
       });
       console.log("有問題index", targetIdx);
       cell.clients.splice(targetIdx, 1);
       console.log("刪除完畢", cell.clients);
     }
   });
-  console.log(deviceArr, "deviceArr");
-  console.log(deviceId, "deviceId");
-  let targetDevice = deviceArr.find((el) => {
-    return el.deviceId == deviceId;
+  let targetDevice = deviceArr.find((device) => {
+    return device.deviceId === deviceId;
   });
-  targetDevice.state = "offline";
+  if (targetDevice) {
+    targetDevice.state = "offline";
+  } else {
+    console.log("在deviceArr中找不到對應裝置");
+  }
 });
 
 //get Flow Controll
@@ -141,20 +133,20 @@ const server = app.listen(PORT, () => {
 //將 express 交給 SocketServer 開啟 WebSocket 的服務
 const wws = new SocketServer({ server });
 wws.on("connection", (ws) => {
-  const time = Date();
-  const deviceId = uuidv4();
-  const cellId = cellArr[Math.floor(Math.random() * cellArr.length)].cellId;
-  const uploadRate = 0;
+  // const time = Date();
+  // const deviceId = uuidv4();
+  // const cellId = cellArr[Math.floor(Math.random() * cellArr.length)].cellId;
+  // const uploadRate = 0;
 
-  var metadata = { deviceId, cellId, time, uploadRate };
-  var deviceReport = {
-    type: "device.report",
-    data: metadata,
-  };
-  clientPhones.set(ws, metadata);
-  const currentClient = clientPhones.get(ws);
-  console.log(currentClient, "\n用戶已連線");
-  ws.send(JSON.stringify(deviceReport));
+  // var metadata = { deviceId, cellId, time, uploadRate };
+  // var deviceReport = {
+  //   type: "device.report",
+  //   data: metadata,
+  // };
+  // clientPhones.set(ws, metadata);
+  // const currentClient = clientPhones.get(ws);
+  console.log("\n用戶已連線");
+  // ws.send(JSON.stringify(deviceReport));
 
   // 當收到client消息時
   ws.on("message", (data) => {
@@ -179,9 +171,18 @@ wws.on("connection", (ws) => {
           targetCell.clients.push({
             deviceId: parseData.data.deviceId,
             uploadRate: parseData.data.uploadRate,
+            streaming: parseData.data.streaming,
           });
+          var metadata = {
+            deviceId: parseData.data.deviceId,
+            cellId: parseData.data.cellId,
+            time: parseData.data.timestamp,
+            uploadRate: parseData.data.uploadRate,
+          };
+          clientPhones.set(ws, metadata);
         } else if (existClient != null) {
           existClient.uploadRate = parseData.data.uploadRate;
+          existClient.streaming = parseData.data.streaming;
           let sum = 0;
           targetCell.clients.forEach((client) => {
             sum = sum + client.uploadRate;
@@ -195,36 +196,46 @@ wws.on("connection", (ws) => {
           console.log("無符合條件");
         }
       } else {
-        console.log("沒找到目標基地台");
+        console.log("沒找到目標基地台 加進去", parseData.data.deviceId);
+        let cellObj = {
+          cellId: parseData.data.cellId,
+          maxTraffic: 256,
+          clients: [],
+          currTraffic: { value: 0 },
+        };
+        let proxy = new Proxy(cellObj.currTraffic, trafficHandler);
+        cellObj.proxy = proxy;
+        cellArr.push(cellObj);
+        console.log(cellArr, "done cellArr");
       }
     }
-    // /// 發送給所有client：
-    // let clientDevices = wws.clients; //取得所有連接中的 client
-    // clientDevices.forEach((client) => {
-    //   client.send(parseData); // 發送至每個 client
-    // });
   });
   ws.on("close", () => {
-    let targetCell = cellArr.find((cell) => {
-      return cell.cellId == clientPhones.get(ws).cellId;
-    });
-    targetCell.clients.forEach((client) => {
-      if (client.deviceId == clientPhones.get(ws).deviceId) {
-        let removeRate = client.uploadRate;
-        let removeIndex = targetCell.clients.indexOf(client);
-        targetCell.clients.splice(removeIndex, 1);
-        targetCell.currTraffic.value =
-          targetCell.currTraffic.value - removeRate;
-        targetCell.proxy.value =
-          targetCell.currTraffic.value / targetCell.maxTraffic;
-      }
-    });
-    let targetDeviceIdx = deviceArr.findIndex((el) => {
-      el.deviceId == clientPhones.get(ws).deviceId;
-    });
-    deviceArr.splice(targetDeviceIdx, 1);
-    console.log(clientPhones.get(ws), "用戶關閉連線");
-    clientPhones.delete(ws);
+    console.log("server自發 處理 關閉");
+    console.log(clientPhones.size);
+    if (clientPhones.size !== 0) {
+      //clientPhones 有東西
+      let targetCell = cellArr.find((cell) => {
+        return cell.cellId == clientPhones.get(ws).cellId;
+      });
+      targetCell.clients.forEach((client) => {
+        if (client.deviceId == clientPhones.get(ws).deviceId) {
+          let removeRate = client.uploadRate;
+          let removeIndex = targetCell.clients.indexOf(client);
+          targetCell.clients.splice(removeIndex, 1);
+          targetCell.currTraffic.value =
+            targetCell.currTraffic.value - removeRate;
+          targetCell.proxy.value =
+            targetCell.currTraffic.value / targetCell.maxTraffic;
+        }
+      });
+      let targetDeviceIdx = deviceArr.findIndex((el) => {
+        el.deviceId == clientPhones.get(ws).deviceId;
+      });
+      deviceArr.splice(targetDeviceIdx, 1);
+      console.log(clientPhones.get(ws), "用戶關閉連線");
+      clientPhones.delete(ws);
+    }
   });
 });
 
@@ -270,21 +281,49 @@ function flowCtrls() {
   let fullCell = cellArr.find((cell) => {
     return cell.currTraffic.value / cell.maxTraffic > maxLimit;
   }); // 找第一個
-  // console.log(fullCell, cellArr, maxLimit);
   if (fullCell != null && isFlowCtrl == true) {
     let clientShouldOff = fullCell.clients.find((client) => {
-      return (client.streaming = 2);
+      return client.streaming == 2;
     });
-    let ws = getWsById(clientPhones, clientShouldOff.deviceId);
-    let msg = {
-      type: "server.cmd",
-      data: {
-        deviceId: clientShouldOff.deviceId,
-        cmd: 1,
-      },
-    };
-    ws.send(JSON.stringify(msg));
+    if (clientShouldOff) {
+      let ws = getWsById(clientPhones, clientShouldOff.deviceId);
+      let msg = {
+        type: "server.cmd",
+        data: {
+          deviceId: clientShouldOff.deviceId,
+          cmd: 1,
+        },
+      };
+      ws.send(JSON.stringify(msg));
+    } else {
+      console.log("基地台中所有設備 均無Streaming == 2");
+    }
   }
+}
+
+function flowCtrlRevive() {
+  console.log("run flowCtrlsRevive , isFlowCtrl", isFlowCtrl);
+  let freeCell = cellArr.find((cell) => {
+    return cell.currTraffic.value / cell.maxTraffic < minLimit;
+  });
+  if (freeCell != null && isFlowCtrl == true) {
+    let targetDevice = freeCell.clients.find((client) => {
+      return client.streaming === 1;
+    });
+    if (targetDevice) {
+      let targetWs = getWsById(clientPhones, targetDevice.deviceId);
+      let msg = {
+        type: "server.cmd",
+        data: {
+          deviceId: targetDevice.deviceId,
+          cmd: 2,
+        },
+      };
+      targetWs.send(JSON.stringify(msg));
+    } else {
+      console.log("在空閒基地台中無 遭到系統斷開的裝置");
+    }
+  } else console.log("沒找到可以回復流量的基地台");
 }
 
 function getWsById(map, searchValue) {

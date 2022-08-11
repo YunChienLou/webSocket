@@ -15,5 +15,6 @@ const flowCtrls = {
   getFlowCtrl: () => Axios.get("/api/flowCtrl"),
   toggleFlowCtrl: (data) => Axios.post("/api/flowCtrl", data),
   setFlowCtrl: (data) => Axios.post("/api/flowCtrl/limits", data),
+  getFlowCtrlLimit:()=>Axios.get("/api/flowCtrl/limits")
 };
 export default { cells, devices, flowCtrls };

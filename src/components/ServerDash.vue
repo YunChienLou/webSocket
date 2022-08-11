@@ -36,6 +36,7 @@
                   id="inputPassword2"
                   placeholder="Bandwidth"
                   v-model="bandwidthInput"
+                  min="0"
                 />
               </div>
             </div>
@@ -45,6 +46,7 @@
               type="submit"
               class="btn btn-outline-info mb-3"
               @click="updateCell()"
+              :disabled="bandwidthInput <= 0 || cellIdInput == ''"
             >
               Update
             </button>
@@ -73,13 +75,15 @@
               type="submit"
               class="btn btn-outline-info mb-3"
               @click="switchStreaming(2)"
+              :disabled="deviceIdInput == ''"
             >
               Play
             </button>
             <button
               type="submit"
               class="btn btn-outline-danger mb-3 ms-4"
-              @click="switchStreaming(0)"
+              @click="switchStreaming(1)"
+              :disabled="deviceIdInput == ''"
             >
               Stop
             </button>
@@ -98,6 +102,7 @@
                   <span class="input-group-text" id="basic-addon1">Max</span>
                   <input
                     type="number"
+                    step="0.1"
                     class="form-control"
                     v-model="maxUsageInput"
                   />
@@ -108,6 +113,7 @@
                   <span class="input-group-text" id="basic-addon1">Min</span>
                   <input
                     type="number"
+                    step="0.1"
                     class="form-control"
                     v-model="minUsageInput"
                   />
@@ -212,9 +218,9 @@ const $CellsAPI = inject("$CellsAPI");
 const $DevicesAPI = inject("$DevicesAPI");
 const $FlowCtrlsAPI = inject("$FlowCtrlsAPI");
 
-const bandwidthInput = ref(Number);
-const cellIdInput = ref();
-const deviceIdInput = ref();
+const bandwidthInput = ref();
+const cellIdInput = ref("");
+const deviceIdInput = ref("");
 const maxUsageInput = ref(0.9);
 const minUsageInput = ref(0.8);
 
@@ -240,7 +246,6 @@ const switchStreaming = async (code) => {
   let data = { isPlay: code };
   await $DevicesAPI.updateDeviceStreaming(deviceIdInput.value, data);
   getAllDevices();
-  deviceIdInput.value = "";
 };
 const updateCell = async () => {
   let data = { newMax: bandwidthInput.value };
@@ -264,6 +269,11 @@ const FlowCtrlLimitHandler = async () => {
   let input = { maxLimit: maxUsageInput.value, minLimit: minUsageInput.value };
   await $FlowCtrlsAPI.setFlowCtrl(input);
 };
+const getFlowCtrlLimit = async () => {
+  let res = await $FlowCtrlsAPI.getFlowCtrlLimit();
+  maxUsageInput.value = res.data.maxLimit;
+  minUsageInput.value = res.data.minLimit;
+};
 
 watch([maxUsageInput, minUsageInput], () => {
   FlowCtrlLimitHandler();
@@ -279,6 +289,7 @@ const refresh = () => {
 onMounted(() => {
   getAllCells();
   getAllDevices();
+  getFlowCtrlLimit();
   refresh();
 });
 onUnmounted(() => {

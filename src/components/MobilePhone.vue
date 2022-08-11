@@ -30,13 +30,13 @@
     <div class="mb-3 row">
       <label for="" class="col-3 col-form-label">Device ID : </label>
       <div class="col-9">
-        <input type="text" class="form-control" id="" :value="deviceId" />
+        <input type="text" class="form-control" id="" v-model="deviceId" />
       </div>
     </div>
     <div class="mb-3 row">
       <label for="" class="col-3 col-form-label">Cell ID</label>
       <div class="col-9">
-        <input type="text" class="form-control" id="" :value="cellId" />
+        <input type="text" class="form-control" id="" v-model="cellId" />
       </div>
     </div>
     <div class="row">
@@ -46,6 +46,7 @@
           class="btn btn-outline-info my-4 text-center"
           id="btnSend"
           @click="openCon()"
+          :disabled="isInit"
         >
           Connect
         </button>
@@ -56,6 +57,7 @@
           class="btn btn-outline-danger my-4 text-center"
           id="btnSend"
           @click="disCon()"
+          :disabled="!isInit"
         >
           Disconnect
         </button>
@@ -79,6 +81,7 @@
           id="btnSend"
           style="width: 80%"
           @click="asyncTrafficPerSec"
+          :disabled="isStreaming == 0 || isStreaming == 1"
         >
           Set
         </button>
@@ -104,7 +107,12 @@
           type="button"
           class="btn btn-outline-info my-4 text-center px-4"
           id="btnSend"
-          @click="isStreaming = 2"
+          @click="
+            () => {
+              isStreaming = 2;
+              trafficPerSecSend = trafficPerSecUI;
+            }
+          "
         >
           Play
         </button>
@@ -114,7 +122,12 @@
           type="button"
           class="btn btn-outline-danger my-4 text-center px-4"
           id="btnSend"
-          @click="isStreaming = 0"
+          @click="
+            () => {
+              isStreaming = 0;
+              trafficPerSecSend = 0;
+            }
+          "
         >
           Stop
         </button>
@@ -128,6 +141,8 @@ import { inject, onMounted, onUnmounted, ref } from "vue";
 const $DevicesAPI = inject("$DevicesAPI");
 const deviceId = ref();
 const cellId = ref();
+
+const isInit = ref(false);
 const serverAddress = ref();
 const isStreaming = ref(0);
 const trafficPerSecUI = ref(0);
@@ -138,13 +153,14 @@ let url = "ws://localhost:3000";
 var ws = new WebSocket(url);
 
 const disCon = async () => {
-  if (interval === 0) {
+  if (interval == undefined) {
     alert("no connection now");
     // 呼叫server把裝置流量停掉，串流0，狀態 off line
   } else {
+    console.log(interval);
+    isInit.value = false;
     clearInterval(interval);
   }
-  trafficPerSecUI.value = 0;
   trafficPerSecSend.value = 0;
   isStreaming.value = 0;
   let data = { cellId: cellId.value };
@@ -164,6 +180,9 @@ const disCon = async () => {
   ws.send(JSON.stringify(msg));
 };
 const openCon = () => {
+  isInit.value = true;
+  trafficPerSecSend.value = trafficPerSecUI.value;
+  isStreaming.value = 2;
   handleSend();
 };
 const handleSend = () => {
@@ -185,6 +204,7 @@ function resToServer(thisWs) {
   var msg = {
     type: "device.report",
     data: {
+      serverAddress: serverAddress.value,
       deviceId: deviceId.value,
       ip: "192.168.1.158",
       cellId: cellId.value,
@@ -217,6 +237,7 @@ onMounted(() => {
     } else if (txt.type === "server.cmd") {
       if (txt.data.cmd == 2) {
         isStreaming.value = 2;
+        trafficPerSecSend.value = trafficPerSecUI.value;
       } else if (txt.data.cmd == 0) {
         isStreaming.value = 0;
         trafficPerSecSend.value = 0;
@@ -227,7 +248,6 @@ onMounted(() => {
       console.log("server.cmd");
     }
   };
-  handleSend();
 });
 onUnmounted(() => {
   trafficPerSecUI.value = 0;
