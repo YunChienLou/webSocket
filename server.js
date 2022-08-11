@@ -213,6 +213,7 @@ wws.on("connection", (ws) => {
   ws.on("close", () => {
     console.log("server自發 處理 關閉");
     console.log(clientPhones.size);
+    console.log(clientPhones);
     if (clientPhones.size !== 0) {
       //clientPhones 有東西
       let targetCell = cellArr.find((cell) => {
@@ -291,7 +292,7 @@ function flowCtrls() {
         type: "server.cmd",
         data: {
           deviceId: clientShouldOff.deviceId,
-          cmd: 1,
+          cmd: 100,
         },
       };
       ws.send(JSON.stringify(msg));
@@ -316,7 +317,7 @@ function flowCtrlRevive() {
         type: "server.cmd",
         data: {
           deviceId: targetDevice.deviceId,
-          cmd: 2,
+          cmd: 101,
         },
       };
       targetWs.send(JSON.stringify(msg));

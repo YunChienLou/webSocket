@@ -74,7 +74,7 @@
             <button
               type="submit"
               class="btn btn-outline-info mb-3"
-              @click="switchStreaming(2)"
+              @click="switchStreaming(101)"
               :disabled="deviceIdInput == ''"
             >
               Play
@@ -82,7 +82,7 @@
             <button
               type="submit"
               class="btn btn-outline-danger mb-3 ms-4"
-              @click="switchStreaming(1)"
+              @click="switchStreaming(100)"
               :disabled="deviceIdInput == ''"
             >
               Stop
@@ -284,7 +284,7 @@ const refresh = () => {
     getAllCells();
     getAllDevices();
     getFlowCtrl();
-  }, 5000);
+  }, 500);
 };
 onMounted(() => {
   getAllCells();
