@@ -4,16 +4,12 @@
   </div>
   <div class="container text-start">
     <div class="card text-center mt-5">
-      <div class="card-header bg-dark text-white position-relative">
+      <div
+        class="card-header bg-dark text-white position-relative"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarToggleExternalContent"
+      >
         Test Functions
-        <button
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarToggleExternalContent"
-          class="btn-close btn-close-white position-absolute top-50 start-100 translate-middle"
-          aria-label="Close"
-          style="margin-left: -20px"
-        ></button>
       </div>
       <div class="collapse" id="navbarToggleExternalContent">
         <div class="card-body">

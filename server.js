@@ -158,10 +158,12 @@ const server = app.listen(PORT, () => {
 countTimer = setInterval(() => {
   if (isFlowCtrl === true) {
     cellArr.forEach((cell) => {
-      if (cell.proxy.value >= cell.maxTraffic) {
+      if (cell.currTraffic.value / cell.maxTraffic > maxLimit) {
         flowCtrls();
       } else {
-        flowCtrlRevive();
+        if (cell.currTraffic.value / cell.maxTraffic < minLimit) {
+          flowCtrlRevive();
+        }
       }
     });
   } else {
@@ -175,7 +177,8 @@ wws.on("connection", (ws) => {
   // 當收到client消息時
   ws.on("message", (data) => {
     // 收回來是 Buffer 格式、需轉成字串
-    console.log(deviceArr);
+    // console.log(deviceArr);
+    console.log(cellArr);
     let parseData;
     let stringData = data.toString();
     parseData = JSON.parse(stringData);
@@ -214,8 +217,8 @@ wws.on("connection", (ws) => {
           });
 
           targetCell.currTraffic.value = sum;
-          targetCell.proxy.value =
-            targetCell.currTraffic.value / targetCell.maxTraffic;
+          // targetCell.proxy.value =
+          //   targetCell.currTraffic.value / targetCell.maxTraffic;
           // console.log("找到目標基地台，Client刷新連線");
         } else {
           console.log("無符合條件");
@@ -228,8 +231,8 @@ wws.on("connection", (ws) => {
           clients: [],
           currTraffic: { value: 0 },
         };
-        let proxy = new Proxy(cellObj.currTraffic, trafficHandler);
-        cellObj.proxy = proxy;
+        // let proxy = new Proxy(cellObj.currTraffic, trafficHandler);
+        // cellObj.proxy = proxy;
         cellArr.push(cellObj);
         console.log(cellArr, "done cellArr");
       }
@@ -249,8 +252,8 @@ wws.on("connection", (ws) => {
           targetCell.clients.splice(removeIndex, 1);
           targetCell.currTraffic.value =
             targetCell.currTraffic.value - removeRate;
-          targetCell.proxy.value =
-            targetCell.currTraffic.value / targetCell.maxTraffic;
+          // targetCell.proxy.value =
+          //   targetCell.currTraffic.value / targetCell.maxTraffic;
         }
       });
       let targetDeviceIdx = deviceArr.findIndex((el) => {
