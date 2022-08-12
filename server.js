@@ -159,10 +159,10 @@ countTimer = setInterval(() => {
   if (isFlowCtrl === true) {
     cellArr.forEach((cell) => {
       if (cell.currTraffic.value / cell.maxTraffic > maxLimit) {
-        flowCtrls();
+        flowCtrls(cell);
       } else {
         if (cell.currTraffic.value / cell.maxTraffic < minLimit) {
-          flowCtrlRevive();
+          flowCtrlRevive(cell);
         }
       }
     });
@@ -177,14 +177,12 @@ wws.on("connection", (ws) => {
   // 當收到client消息時
   ws.on("message", (data) => {
     // 收回來是 Buffer 格式、需轉成字串
-    // console.log(deviceArr);
-    console.log(cellArr);
     let parseData;
     let stringData = data.toString();
     parseData = JSON.parse(stringData);
     // console.log("收到client消息", parseData);
     if (parseData.type === "device.report") {
-      console.log("流量計算");
+      console.log("收到裝置msg");
       let targetCell = cellArr.find((cell) => {
         return cell.cellId === parseData.data.cellId;
       }); // 去找到array 中id 相符的那個基地台
@@ -308,13 +306,10 @@ function uploadDeviceData(data) {
   }
 }
 
-function flowCtrls() {
-  console.log("run flowCtrls , isFlowCtrl", isFlowCtrl);
-  let fullCell = cellArr.find((cell) => {
-    return cell.currTraffic.value / cell.maxTraffic > maxLimit;
-  }); // 找第一個
-  if (fullCell != null && isFlowCtrl == true) {
-    let clientShouldOff = fullCell.clients.find((client) => {
+function flowCtrls(cell) {
+  console.log("run flowCtrls , isFlowCtrl :", isFlowCtrl);
+  if (cell != null && isFlowCtrl == true) {
+    let clientShouldOff = cell.clients.find((client) => {
       return client.streaming == 2;
     });
     if (clientShouldOff) {
@@ -333,13 +328,10 @@ function flowCtrls() {
   }
 }
 
-function flowCtrlRevive() {
+function flowCtrlRevive(cell) {
   console.log("run flowCtrlsRevive , isFlowCtrl", isFlowCtrl);
-  let freeCell = cellArr.find((cell) => {
-    return cell.currTraffic.value / cell.maxTraffic < minLimit;
-  });
-  if (freeCell != null && isFlowCtrl == true) {
-    let targetDevice = freeCell.clients.find((client) => {
+  if (cell != null && isFlowCtrl == true) {
+    let targetDevice = cell.clients.find((client) => {
       return client.streaming === 1;
     });
     if (targetDevice) {
