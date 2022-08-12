@@ -4,142 +4,156 @@
   </div>
   <div class="container text-start">
     <div class="card text-center mt-5">
-      <div class="card-header bg-dark text-white">Test Functions</div>
-      <div class="card-body">
-        <div class="row g-5">
-          <div class="col-4">
-            <div class="row">
-              <div class="col-4">
-                <label for="staticEmail2" class="col-form-label">Cell ID</label>
-              </div>
-              <div class="col-8">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="staticEmail2"
-                  v-model="cellIdInput"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="row">
-              <div class="col">
-                <label for="inputPassword2" class="col-form-label"
-                  >Total Bandwidth</label
-                >
-              </div>
-              <div class="col">
-                <input
-                  type="number"
-                  class="form-control"
-                  id="inputPassword2"
-                  placeholder="Bandwidth"
-                  v-model="bandwidthInput"
-                  min="0"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="col-2">
-            <button
-              type="submit"
-              class="btn btn-outline-info mb-3"
-              @click="updateCell()"
-              :disabled="bandwidthInput <= 0 || cellIdInput == ''"
-            >
-              Update
-            </button>
-          </div>
-        </div>
-        <div class="row g-5">
-          <div class="col-6">
-            <div class="row">
-              <div class="col-3">
-                <label for="staticEmail2" class="col-form-label"
-                  >Device ID</label
-                >
-              </div>
-              <div class="col-8">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="staticEmail2"
-                  :value="deviceIdInput"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="col-4">
-            <button
-              type="submit"
-              class="btn btn-outline-info mb-3"
-              @click="switchStreaming(101)"
-              :disabled="deviceIdInput == ''"
-            >
-              Play
-            </button>
-            <button
-              type="submit"
-              class="btn btn-outline-danger mb-3 ms-4"
-              @click="switchStreaming(100)"
-              :disabled="deviceIdInput == ''"
-            >
-              Stop
-            </button>
-          </div>
-        </div>
-        <div class="row g-5">
-          <div class="col-2">
-            <label for="staticEmail2" class="px-2 col-form-label text-start"
-              >Flow Control</label
-            >
-          </div>
-          <div class="col">
-            <div class="row">
-              <div class="col d-flex">
-                <div class="input-group mb-3">
-                  <span class="input-group-text" id="basic-addon1">Max</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    class="form-control"
-                    v-model="maxUsageInput"
-                  />
+      <div class="card-header bg-dark text-white position-relative">
+        Test Functions
+        <button
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarToggleExternalContent"
+          class="btn-close btn-close-white position-absolute top-50 start-100 translate-middle"
+          aria-label="Close"
+          style="margin-left: -20px"
+        ></button>
+      </div>
+      <div class="collapse" id="navbarToggleExternalContent">
+        <div class="card-body">
+          <div class="row g-5">
+            <div class="col-4">
+              <div class="row">
+                <div class="col-4">
+                  <label for="staticEmail2" class="col-form-label"
+                    >Cell ID</label
+                  >
                 </div>
-              </div>
-              <div class="col">
-                <div class="input-group mb-3">
-                  <span class="input-group-text" id="basic-addon1">Min</span>
+                <div class="col-8">
                   <input
-                    type="number"
-                    step="0.1"
+                    type="text"
                     class="form-control"
-                    v-model="minUsageInput"
+                    id="staticEmail2"
+                    v-model="cellIdInput"
                   />
                 </div>
               </div>
             </div>
-          </div>
-          <div class="col-3">
-            <div class="row">
-              <div class="col">
-                <button
-                  type="submit"
-                  class="btn btn-outline-info mb-3"
-                  @click.prevent="toggleFlowCtrl(true)"
-                >
-                  Enable
-                </button>
+            <div class="col-6">
+              <div class="row">
+                <div class="col">
+                  <label for="inputPassword2" class="col-form-label"
+                    >Total Bandwidth</label
+                  >
+                </div>
+                <div class="col">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="inputPassword2"
+                    placeholder="Bandwidth"
+                    v-model="bandwidthInput"
+                    min="0"
+                  />
+                </div>
               </div>
-              <div class="col">
-                <button
-                  type="submit"
-                  class="btn btn-outline-danger mb-3"
-                  @click.prevent="toggleFlowCtrl(false)"
-                >
-                  Disable
-                </button>
+            </div>
+            <div class="col-2">
+              <button
+                type="submit"
+                class="btn btn-outline-info mb-3"
+                @click="updateCell()"
+                :disabled="bandwidthInput <= 0 || cellIdInput == ''"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+          <div class="row g-5">
+            <div class="col-6">
+              <div class="row">
+                <div class="col-3">
+                  <label for="staticEmail2" class="col-form-label"
+                    >Device ID</label
+                  >
+                </div>
+                <div class="col-8">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="staticEmail2"
+                    :value="deviceIdInput"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <button
+                type="submit"
+                class="btn btn-outline-info mb-3"
+                @click="switchStreaming(101)"
+                :disabled="deviceIdInput == ''"
+              >
+                Play
+              </button>
+              <button
+                type="submit"
+                class="btn btn-outline-danger mb-3 ms-4"
+                @click="switchStreaming(100)"
+                :disabled="deviceIdInput == ''"
+              >
+                Stop
+              </button>
+            </div>
+          </div>
+          <div class="row g-5">
+            <div class="col-2">
+              <label for="staticEmail2" class="px-2 col-form-label text-start"
+                >Flow Control</label
+              >
+            </div>
+            <div class="col">
+              <div class="row">
+                <div class="col d-flex">
+                  <div class="input-group mb-3">
+                    <span class="input-group-text" id="basic-addon1">Max</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      class="form-control"
+                      v-model="maxUsageInput"
+                    />
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group mb-3">
+                    <span class="input-group-text" id="basic-addon1">Min</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      class="form-control"
+                      v-model="minUsageInput"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="row">
+                <div class="col">
+                  <button
+                    type="submit"
+                    class="btn btn-outline-info mb-3"
+                    @click.prevent="toggleFlowCtrl(true)"
+                  >
+                    Enable
+                  </button>
+                </div>
+                <div class="col">
+                  <button
+                    type="submit"
+                    class="btn btn-outline-danger mb-3"
+                    @click.prevent="toggleFlowCtrl(false)"
+                  >
+                    Disable
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -175,7 +189,8 @@
           <td>{{ cell.maxTraffic }}</td>
           <td>{{ cell.currTraffic.value.toFixed(1) }}</td>
           <td :class="scoreColor(cell.currTraffic.value / cell.maxTraffic)">
-            {{ ((cell.currTraffic.value / cell.maxTraffic) * 100).toFixed(1) }} %
+            {{ ((cell.currTraffic.value / cell.maxTraffic) * 100).toFixed(1) }}
+            %
           </td>
           <td>{{ cell.clients.length }}</td>
         </tr>
@@ -193,8 +208,8 @@
       </thead>
       <tbody>
         <tr
-          v-for="(device) in devices"
-          :key="device.deviceId"
+          v-for="device in devices"
+          :key="device"
           @click="
             () => {
               deviceIdInput = device.deviceId;

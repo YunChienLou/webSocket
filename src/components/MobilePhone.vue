@@ -233,20 +233,20 @@ onMounted(() => {
     if (txt.type === "device.report") {
       deviceId.value = txt.data.deviceId;
       cellId.value = txt.data.cellId;
-      console.log("device.report");
+      console.log("device.report", txt);
     } else if (txt.type === "server.cmd") {
       if (txt.data.cmd == 101) {
         isStreaming.value = 2;
         trafficPerSecSend.value = trafficPerSecUI.value;
-      }  else if (txt.data.cmd == 100) {
+      } else if (txt.data.cmd == 100) {
         isStreaming.value = 1;
         trafficPerSecSend.value = 0;
-      } 
+      }
       // else if (txt.data.cmd == 102) { //客戶自己取消
       //   isStreaming.value = 0;
       //   trafficPerSecSend.value = 0;
       // }
-      console.log("server.cmd");
+      console.log("server.cmd", txt);
     }
   };
 });

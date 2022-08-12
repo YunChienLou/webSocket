@@ -17,23 +17,24 @@ var clientPhones = new Map();
 var isFlowCtrl = false;
 var maxLimit = 0.9;
 var minLimit = 0.8;
+var countTimer;
 
 const trafficHandler = {
   get: function () {
     return Reflect.get(...arguments);
   },
   set(target, property, value, receiver) {
-    if (value < maxLimit) {
-      console.log("Ok for streaming");
-      if (value < minLimit) {
-        //小於0.8 且這個 cell 中的client 有人的isStreaming == 1
-        console.log(value, minLimit, "should Revive");
-        flowCtrlRevive();
-      }
-    } else {
-      console.log(value, maxLimit, "should block");
-      flowCtrls();
-    }
+    // if (value < maxLimit) {
+    //   // console.log("Ok for streaming");
+    //   if (value < minLimit) {
+    //     //小於0.8 且這個 cell 中的client 有人的isStreaming == 1
+    //     // console.log(value, minLimit, "should Revive");
+    //     flowCtrlRevive();
+    //   }
+    // } else {
+    //   console.log(value, maxLimit, "should block");
+    //   flowCtrls();
+    // }
   },
 };
 
@@ -54,7 +55,6 @@ app.post("/api/cells/:cellId", (req, res) => {
       return;
     }
   });
-  res.send("update cells data");
 });
 
 //Get device
@@ -107,11 +107,37 @@ app.post("/api/device/disconnect/:deviceId", (req, res) => {
 app.get("/api/flowCtrl", (req, res) => {
   res.json(isFlowCtrl);
 });
+
 //toggle Flow Controll
 app.post("/api/flowCtrl", (req, res) => {
   let boolean = req.body.isFlowCtrl;
   isFlowCtrl = boolean;
+  if (isFlowCtrl === false) {
+    //先取得stream 等於 1 的 deviceId
+    let targetArr = deviceArr.filter(filterStreamOff);
+    //跑迴圈通知個別資料
+    targetArr.forEach((target) => {
+      let ws = getWsById(clientPhones, target.deviceId);
+      let msg = {
+        type: "server.cmd",
+        data: {
+          deviceId: target.deviceId,
+          cmd: 101,
+        },
+      };
+      ws.send(JSON.stringify(msg));
+      console.log("跑迴圈通知個別資料", target.deviceId);
+    });
+  }
 });
+
+function filterStreamOff(obj) {
+  if (obj.streaming === 1) {
+    return true;
+  }
+  return false;
+}
+
 //set Flow limits
 app.post("/api/flowCtrl/limits", (req, res) => {
   console.log("Server端收到");
@@ -129,32 +155,31 @@ app.get("/api/flowCtrl/limits", (req, res) => {
 const server = app.listen(PORT, () => {
   console.log("listening on port : " + PORT);
 });
-
+countTimer = setInterval(() => {
+  if (isFlowCtrl === true) {
+    cellArr.forEach((cell) => {
+      if (cell.proxy.value >= cell.maxTraffic) {
+        flowCtrls();
+      } else {
+        flowCtrlRevive();
+      }
+    });
+  } else {
+    console.log("進行檢查，但是不開放流量管制");
+  }
+}, 6000);
 //將 express 交給 SocketServer 開啟 WebSocket 的服務
 const wws = new SocketServer({ server });
 wws.on("connection", (ws) => {
-  // const time = Date();
-  // const deviceId = uuidv4();
-  // const cellId = cellArr[Math.floor(Math.random() * cellArr.length)].cellId;
-  // const uploadRate = 0;
-
-  // var metadata = { deviceId, cellId, time, uploadRate };
-  // var deviceReport = {
-  //   type: "device.report",
-  //   data: metadata,
-  // };
-  // clientPhones.set(ws, metadata);
-  // const currentClient = clientPhones.get(ws);
   console.log("\n用戶已連線");
-  // ws.send(JSON.stringify(deviceReport));
-
   // 當收到client消息時
   ws.on("message", (data) => {
     // 收回來是 Buffer 格式、需轉成字串
+    console.log(deviceArr);
     let parseData;
     let stringData = data.toString();
     parseData = JSON.parse(stringData);
-    console.log("收到client消息", parseData);
+    // console.log("收到client消息", parseData);
     if (parseData.type === "device.report") {
       console.log("流量計算");
       let targetCell = cellArr.find((cell) => {
@@ -191,7 +216,7 @@ wws.on("connection", (ws) => {
           targetCell.currTraffic.value = sum;
           targetCell.proxy.value =
             targetCell.currTraffic.value / targetCell.maxTraffic;
-          console.log("找到目標基地台，Client刷新連線");
+          // console.log("找到目標基地台，Client刷新連線");
         } else {
           console.log("無符合條件");
         }
@@ -212,8 +237,6 @@ wws.on("connection", (ws) => {
   });
   ws.on("close", () => {
     console.log("server自發 處理 關閉");
-    console.log(clientPhones.size);
-    console.log(clientPhones);
     if (clientPhones.size !== 0) {
       //clientPhones 有東西
       let targetCell = cellArr.find((cell) => {
@@ -256,15 +279,20 @@ function uploadDeviceData(data) {
     let duplicateDevice = deviceArr.find((device) => {
       return device.deviceId == deviceId;
     });
-    let duplicateDeviceIndex = deviceArr.indexOf(duplicateDevice);
-    deviceArr.splice(duplicateDeviceIndex, 1);
-    deviceArr.push({
-      deviceId: data.deviceId,
-      state: "online",
-      cellId: data.cellId,
-      uploadRate: data.uploadRate,
-      streaming: data.streaming,
-    });
+    duplicateDevice.deviceId = data.deviceId;
+    duplicateDevice.state = "online";
+    duplicateDevice.cellId = data.cellId;
+    duplicateDevice.uploadRate = data.uploadRate;
+    duplicateDevice.streaming = data.streaming;
+    // let duplicateDeviceIndex = deviceArr.indexOf(duplicateDevice);
+    // deviceArr.splice(duplicateDeviceIndex, 1);
+    // deviceArr.push({
+    //   deviceId: data.deviceId,
+    //   state: "online",
+    //   cellId: data.cellId,
+    //   uploadRate: data.uploadRate,
+    //   streaming: data.streaming,
+    // });
   } else {
     // 手機還未註冊
     deviceArr.push({
