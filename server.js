@@ -15,27 +15,15 @@ const cellArr = [];
 const deviceArr = [];
 var clientPhones = new Map();
 var isFlowCtrl = false;
-var maxLimit = 0.8;
-var minLimit = 0.6;
+var maxLimit = 0.9;
+var minLimit = 0.8;
 var countTimer;
 
 const trafficHandler = {
   get: function () {
     return Reflect.get(...arguments);
   },
-  set(target, property, value, receiver) {
-    // if (value < maxLimit) {
-    //   // console.log("Ok for streaming");
-    //   if (value < minLimit) {
-    //     //小於0.8 且這個 cell 中的client 有人的isStreaming == 1
-    //     // console.log(value, minLimit, "should Revive");
-    //     flowCtrlRevive();
-    //   }
-    // } else {
-    //   console.log(value, maxLimit, "should block");
-    //   flowCtrls();
-    // }
-  },
+  set(target, property, value, receiver) {},
 };
 
 //apis
@@ -47,10 +35,9 @@ app.get("/api/cells", (req, res) => {
 //update cells data
 app.post("/api/cells/:cellId", (req, res) => {
   let id = req.params.cellId;
-  // console.log("target cell", id, "new max", req.body.newMax);
+
   cellArr.forEach((cell) => {
     if (cell.cellId == id) {
-      // console.log("found cell", cell);
       cell.maxTraffic = req.body.newMax;
       return;
     }
@@ -156,6 +143,7 @@ const server = app.listen(PORT, () => {
   console.log("listening on port : " + PORT);
 });
 countTimer = setInterval(() => {
+  console.time("流量控制花費時間")
   if (isFlowCtrl === true) {
     cellArr.forEach((cell) => {
       if (cell.currTraffic.value / cell.maxTraffic > maxLimit) {
@@ -169,6 +157,7 @@ countTimer = setInterval(() => {
   } else {
     console.log("進行檢查，但是不開放流量管制");
   }
+  console.timeEnd("流量控制花費時間")
 }, 1000);
 //將 express 交給 SocketServer 開啟 WebSocket 的服務
 const wws = new SocketServer({ server });
@@ -215,9 +204,7 @@ wws.on("connection", (ws) => {
           });
 
           targetCell.currTraffic.value = sum;
-          // targetCell.proxy.value =
-          //   targetCell.currTraffic.value / targetCell.maxTraffic;
-          // console.log("找到目標基地台，Client刷新連線");
+
         } else {
           console.log("無符合條件");
         }
@@ -229,8 +216,7 @@ wws.on("connection", (ws) => {
           clients: [],
           currTraffic: { value: 0 },
         };
-        // let proxy = new Proxy(cellObj.currTraffic, trafficHandler);
-        // cellObj.proxy = proxy;
+
         cellArr.push(cellObj);
         console.log(cellArr, "done cellArr");
       }
@@ -250,8 +236,7 @@ wws.on("connection", (ws) => {
           targetCell.clients.splice(removeIndex, 1);
           targetCell.currTraffic.value =
             targetCell.currTraffic.value - removeRate;
-          // targetCell.proxy.value =
-          //   targetCell.currTraffic.value / targetCell.maxTraffic;
+
         }
       });
       let targetDeviceIdx = deviceArr.findIndex((el) => {
@@ -285,15 +270,6 @@ function uploadDeviceData(data) {
     duplicateDevice.cellId = data.cellId;
     duplicateDevice.uploadRate = data.uploadRate;
     duplicateDevice.streaming = data.streaming;
-    // let duplicateDeviceIndex = deviceArr.indexOf(duplicateDevice);
-    // deviceArr.splice(duplicateDeviceIndex, 1);
-    // deviceArr.push({
-    //   deviceId: data.deviceId,
-    //   state: "online",
-    //   cellId: data.cellId,
-    //   uploadRate: data.uploadRate,
-    //   streaming: data.streaming,
-    // });
   } else {
     // 手機還未註冊
     deviceArr.push({
