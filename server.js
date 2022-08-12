@@ -15,8 +15,8 @@ const cellArr = [];
 const deviceArr = [];
 var clientPhones = new Map();
 var isFlowCtrl = false;
-var maxLimit = 0.9;
-var minLimit = 0.8;
+var maxLimit = 0.8;
+var minLimit = 0.6;
 var countTimer;
 
 const trafficHandler = {
@@ -169,7 +169,7 @@ countTimer = setInterval(() => {
   } else {
     console.log("進行檢查，但是不開放流量管制");
   }
-}, 6000);
+}, 1000);
 //將 express 交給 SocketServer 開啟 WebSocket 的服務
 const wws = new SocketServer({ server });
 wws.on("connection", (ws) => {
@@ -182,7 +182,7 @@ wws.on("connection", (ws) => {
     parseData = JSON.parse(stringData);
     // console.log("收到client消息", parseData);
     if (parseData.type === "device.report") {
-      console.log("收到裝置msg");
+      //console.log("收到裝置msg");
       let targetCell = cellArr.find((cell) => {
         return cell.cellId === parseData.data.cellId;
       }); // 去找到array 中id 相符的那個基地台
@@ -225,7 +225,7 @@ wws.on("connection", (ws) => {
         console.log("沒找到目標基地台 加進去", parseData.data.deviceId);
         let cellObj = {
           cellId: parseData.data.cellId,
-          maxTraffic: 256,
+          maxTraffic: 768,
           clients: [],
           currTraffic: { value: 0 },
         };
